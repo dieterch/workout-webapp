@@ -85,7 +85,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watchEffect } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch, watchEffect } from 'vue'
 import { useWorkoutStore } from '~/stores/workout'
 import type { WorkoutConfig } from '~~/shared/workout'
 
@@ -94,8 +94,53 @@ const { unlock, playGong, playBeep, playSignal, muted } = useAudio()
 const prevRemaining = ref<number | null>(null)
 const prevPhase = ref<string | null>(null)
 
+type WakeLockSentinelLike = {
+  release: () => Promise<void>
+  addEventListener?: (type: 'release', listener: () => void) => void
+}
+
+type WakeLockLike = {
+  request: (type: 'screen') => Promise<WakeLockSentinelLike>
+}
+
 const clock = ref(Date.now())
 let clockTimer: ReturnType<typeof setInterval> | null = null
+let wakeLock: WakeLockSentinelLike | null = null
+
+const requestWakeLock = async () => {
+  if (!import.meta.client) return
+  if (store.workoutState.status !== 'running') return
+  if (wakeLock) return
+
+  const wakeLockApi = (navigator as Navigator & { wakeLock?: WakeLockLike }).wakeLock
+  if (!wakeLockApi?.request) return
+
+  try {
+    wakeLock = await wakeLockApi.request('screen')
+    wakeLock.addEventListener?.('release', () => {
+      wakeLock = null
+    })
+  } catch {
+    // Ignore unsupported/denied wake lock errors.
+  }
+}
+
+const releaseWakeLock = async () => {
+  if (!wakeLock) return
+  const lock = wakeLock
+  wakeLock = null
+  try {
+    await lock.release()
+  } catch {
+    // Ignore release errors.
+  }
+}
+
+const onVisibilityChange = () => {
+  if (document.visibilityState === 'visible' && store.workoutState.status === 'running') {
+    void requestWakeLock()
+  }
+}
 
 onMounted(() => {
   if (!store.socket) {
@@ -105,12 +150,17 @@ onMounted(() => {
   clockTimer = setInterval(() => {
     clock.value = Date.now()
   }, 250)
+
+  document.addEventListener('visibilitychange', onVisibilityChange)
+  void requestWakeLock()
 })
 
 onBeforeUnmount(() => {
   if (clockTimer) {
     clearInterval(clockTimer)
   }
+  document.removeEventListener('visibilitychange', onVisibilityChange)
+  void releaseWakeLock()
 })
 
 const configDialog = ref(false)
@@ -182,6 +232,18 @@ const saveConfig = () => {
   store.updateConfig({ ...configForm })
   configDialog.value = false
 }
+
+watch(
+  () => store.workoutState.status,
+  (status) => {
+    if (status === 'running') {
+      void requestWakeLock()
+      return
+    }
+    void releaseWakeLock()
+  },
+  { immediate: true }
+)
 
 watchEffect(() => {
   const state = store.workoutState
