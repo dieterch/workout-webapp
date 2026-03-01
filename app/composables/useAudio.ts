@@ -55,7 +55,7 @@ async function unlockInternal() {
 }
 
 function unbindUnlockListeners() {
-  if (!unlockHandler || !process.client) return
+  if (!unlockHandler || !import.meta.client) return
   window.removeEventListener('pointerdown', unlockHandler)
   window.removeEventListener('touchstart', unlockHandler)
   window.removeEventListener('mousedown', unlockHandler)
@@ -65,7 +65,7 @@ function unbindUnlockListeners() {
 }
 
 function bindUnlockListeners() {
-  if (!process.client || unlockListenersBound) return
+  if (!import.meta.client || unlockListenersBound) return
   unlockListenersBound = true
 
   unlockHandler = () => {
@@ -79,7 +79,7 @@ function bindUnlockListeners() {
 }
 
 export function useAudio() {
-  if (!process.client) {
+  if (!import.meta.client) {
     return {
       enabled,
       muted,
