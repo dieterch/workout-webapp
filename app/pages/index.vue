@@ -9,8 +9,13 @@
             · Exercise {{ currentExerciseDisplay }} / {{ store.workoutState.config.exercisesPerBlock }}
           </div>
         </div>
-        <div>
+        <div class="d-flex align-center ga-2">
           <v-chip size="small" class="mr-3">{{ connectionLabel }}</v-chip>
+          <v-btn
+            :icon="muted ? 'mdi-volume-off' : 'mdi-volume-high'"
+            variant="tonal"
+            @click="toggleMute"
+          />
           <v-btn icon="mdi-cog" variant="tonal" @click="openConfigDialog" />
         </div>
       </div>
@@ -40,7 +45,7 @@
           class="text-black"
           min-width="150"
           :disabled="store.workoutState.status === 'running'"
-          @click="store.start()"
+          @click="onStart"
         >
           Start
         </v-btn>
@@ -82,11 +87,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watchEffect } from 'vue'
 import { useWorkoutStore } from '~/stores/workout'
 import type { WorkoutConfig } from '~~/shared/workout'
 
 const store = useWorkoutStore()
+const { unlock, playGong, playBeep, playSignal, muted } = useAudio()
+const prevRemaining = ref<number | null>(null)
+const prevPhase = ref<string | null>(null)
 
 const clock = ref(Date.now())
 let clockTimer: ReturnType<typeof setInterval> | null = null
@@ -162,10 +170,54 @@ const openConfigDialog = () => {
   configDialog.value = true
 }
 
+const onStart = () => {
+  unlock()
+  store.start()
+}
+
+const toggleMute = () => {
+  muted.value = !muted.value
+}
+
 const saveConfig = () => {
   store.updateConfig({ ...configForm })
   configDialog.value = false
 }
+
+watchEffect(() => {
+  const state = store.workoutState
+  const remaining = displayRemainingSeconds.value
+
+  if (state.phase !== 'action' || state.status !== 'running') {
+    prevRemaining.value = remaining
+    prevPhase.value = state.phase
+    return
+  }
+
+  if (prevPhase.value !== 'action' && state.phase === 'action') {
+    playGong()
+  }
+
+  const half = Math.floor(state.config.actionSeconds / 2)
+  if (remaining === half && prevRemaining.value !== half) {
+    playSignal()
+  }
+
+  if ([5, 4, 3, 2, 1].includes(remaining) && remaining !== prevRemaining.value) {
+    if (remaining === 1) {
+      playSignal()
+    } else {
+      playBeep()
+    }
+  }
+
+  if (remaining === 0 && prevRemaining.value !== 0) {
+    playGong()
+  }
+
+  prevRemaining.value = remaining
+  prevPhase.value = state.phase
+})
 </script>
 
 <style scoped>
