@@ -4,5 +4,6 @@
   "actionSeconds": 40,
   "restSeconds": 20,
   "blockRestSeconds": 60,
-  "blocks": 3
+  "blocks": 3,
+  "countdownBeeps": 4
 }

@@ -76,6 +76,7 @@
         <v-text-field v-model.number="configForm.restSeconds" type="number" label="Rest seconds" />
         <v-text-field v-model.number="configForm.blockRestSeconds" type="number" label="Block rest seconds" />
         <v-text-field v-model.number="configForm.blocks" type="number" label="Blocks" />
+        <v-text-field v-model.number="configForm.countdownBeeps" type="number" min="0" label="Countdown beeps" />
       </v-card-text>
       <v-card-actions>
         <v-spacer />
@@ -199,16 +200,15 @@ watchEffect(() => {
   }
 
   const half = Math.floor(state.config.actionSeconds / 2)
-  if (remaining === half && prevRemaining.value !== half) {
+  if (half > 1 && remaining === half && prevRemaining.value !== half) {
     playSignal()
   }
 
-  if ([5, 4, 3, 2, 1].includes(remaining) && remaining !== prevRemaining.value) {
-    if (remaining === 1) {
-      playSignal()
-    } else {
-      playBeep()
-    }
+  const countdownStart = state.config.countdownBeeps + 1
+  if (remaining === 1 && prevRemaining.value !== 1) {
+    playSignal()
+  } else if (remaining >= 2 && remaining <= countdownStart && remaining !== prevRemaining.value) {
+    playBeep()
   }
 
   if (remaining === 0 && prevRemaining.value !== 0) {

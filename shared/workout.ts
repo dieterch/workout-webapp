@@ -8,6 +8,7 @@ export type WorkoutConfig = {
   restSeconds: number
   blockRestSeconds: number
   blocks: number
+  countdownBeeps: number
 }
 
 export type WorkoutState = {
@@ -36,7 +37,8 @@ export const defaultWorkoutConfig: WorkoutConfig = {
   actionSeconds: 40,
   restSeconds: 20,
   blockRestSeconds: 60,
-  blocks: 3
+  blocks: 3,
+  countdownBeeps: 4
 }
 
 export const createIdleState = (config: WorkoutConfig = defaultWorkoutConfig): WorkoutState => ({
@@ -55,5 +57,6 @@ export const clampConfig = (config: WorkoutConfig): WorkoutConfig => ({
   actionSeconds: Math.max(1, Math.floor(config.actionSeconds)),
   restSeconds: Math.max(1, Math.floor(config.restSeconds)),
   blockRestSeconds: Math.max(1, Math.floor(config.blockRestSeconds)),
-  blocks: Math.max(1, Math.floor(config.blocks))
+  blocks: Math.max(1, Math.floor(config.blocks)),
+  countdownBeeps: Math.max(0, Math.floor(config.countdownBeeps ?? defaultWorkoutConfig.countdownBeeps))
 })
