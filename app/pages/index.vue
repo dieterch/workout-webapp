@@ -174,6 +174,7 @@ const onStart = () => {
 }
 
 const toggleMute = () => {
+  unlock()
   muted.value = !muted.value
 }
 

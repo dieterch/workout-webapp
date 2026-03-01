@@ -6,6 +6,7 @@ const muted = ref(false)
 let gong: HTMLAudioElement | null = null
 let beep: HTMLAudioElement | null = null
 let signal: HTMLAudioElement | null = null
+let unlockListenersBound = false
 
 function ensureAudioElements() {
   if (!gong) gong = new Audio('/sounds/gong.mp3')
@@ -15,6 +16,10 @@ function ensureAudioElements() {
   gong.preload = 'auto'
   beep.preload = 'auto'
   signal.preload = 'auto'
+
+  gong.load()
+  beep.load()
+  signal.load()
 }
 
 async function prime(audio: HTMLAudioElement) {
@@ -32,6 +37,29 @@ async function prime(audio: HTMLAudioElement) {
   }
 }
 
+function unlockInternal() {
+  if (enabled.value) return
+  enabled.value = true
+
+  if (gong) void prime(gong)
+  if (beep) void prime(beep)
+  if (signal) void prime(signal)
+}
+
+function bindUnlockListeners() {
+  if (!process.client || unlockListenersBound) return
+  unlockListenersBound = true
+
+  const handler = () => {
+    unlockInternal()
+  }
+
+  window.addEventListener('pointerdown', handler, { once: true, passive: true })
+  window.addEventListener('touchstart', handler, { once: true, passive: true })
+  window.addEventListener('mousedown', handler, { once: true, passive: true })
+  window.addEventListener('keydown', handler, { once: true })
+}
+
 export function useAudio() {
   if (!process.client) {
     return {
@@ -45,14 +73,10 @@ export function useAudio() {
   }
 
   ensureAudioElements()
+  bindUnlockListeners()
 
   function unlock() {
-    if (enabled.value) return
-    enabled.value = true
-
-    if (gong) void prime(gong)
-    if (beep) void prime(beep)
-    if (signal) void prime(signal)
+    unlockInternal()
   }
 
   function play(audio: HTMLAudioElement) {
