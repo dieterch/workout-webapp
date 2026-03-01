@@ -37,29 +37,28 @@
         <div class="timer-value">{{ displayRemainingSeconds }}</div>
       </div>
 
-      <div class="d-flex justify-center ga-4 mb-2">
+      <div class="controls-row d-flex justify-center ga-2 mb-2">
         <v-btn
-          size="x-large"
+          size="large"
           color="white"
           variant="elevated"
-          class="text-black"
-          min-width="150"
+          class="text-black control-btn"
           :disabled="store.workoutState.status === 'running'"
           @click="onStart"
         >
           Start
         </v-btn>
         <v-btn
-          size="x-large"
+          size="large"
           color="amber-darken-4"
           variant="elevated"
-          min-width="150"
+          class="control-btn"
           :disabled="store.workoutState.status !== 'running'"
           @click="store.pause()"
         >
           Pause
         </v-btn>
-        <v-btn size="x-large" color="black" variant="tonal" min-width="150" @click="store.stop()">Stop</v-btn>
+        <v-btn size="large" color="black" variant="tonal" class="control-btn" @click="store.stop()">Stop</v-btn>
       </div>
 
       <div class="text-body-2 mt-2">Status: {{ store.workoutState.status }} · Phase: {{ store.workoutState.phase }}</div>
@@ -267,6 +266,14 @@ watchEffect(() => {
   font-variant-numeric: tabular-nums;
 }
 
+.controls-row {
+  flex-wrap: wrap;
+}
+
+.control-btn {
+  min-width: 104px;
+}
+
 @media (max-width: 600px) {
   .phase-label {
     font-size: 1.5rem;
@@ -274,6 +281,11 @@ watchEffect(() => {
 
   .timer-value {
     font-size: 4rem;
+  }
+
+  .control-btn {
+    min-width: 92px;
+    font-size: 0.9rem;
   }
 }
 </style>

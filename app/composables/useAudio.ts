@@ -11,6 +11,25 @@ function ensureAudioElements() {
   if (!gong) gong = new Audio('/sounds/gong.mp3')
   if (!beep) beep = new Audio('/sounds/beep.mp3')
   if (!signal) signal = new Audio('/sounds/signal.mp3')
+
+  gong.preload = 'auto'
+  beep.preload = 'auto'
+  signal.preload = 'auto'
+}
+
+async function prime(audio: HTMLAudioElement) {
+  const previousMuted = audio.muted
+  audio.muted = true
+  audio.currentTime = 0
+  try {
+    await audio.play()
+    audio.pause()
+    audio.currentTime = 0
+  } catch {
+    // Ignore unlock errors; next user interaction can retry.
+  } finally {
+    audio.muted = previousMuted
+  }
 }
 
 export function useAudio() {
@@ -31,7 +50,9 @@ export function useAudio() {
     if (enabled.value) return
     enabled.value = true
 
-    gong?.play().then(() => gong?.pause()).catch(() => {})
+    if (gong) void prime(gong)
+    if (beep) void prime(beep)
+    if (signal) void prime(signal)
   }
 
   function play(audio: HTMLAudioElement) {
