@@ -4,10 +4,8 @@
       <div class="d-flex justify-space-between align-center mb-4">
         <div class="text-left">
           <div class="text-h6 font-weight-bold">{{ workoutName }}</div>
-          <div class="text-body-2">
-            Block {{ currentBlockDisplay }} / {{ store.workoutState.config.blocks }}
-            · Exercise {{ currentExerciseDisplay }} / {{ store.workoutState.config.exercisesPerBlock }}
-          </div>
+          <div class="text-body-2">Block {{ currentBlockDisplay }} / {{ store.workoutState.config.blocks }}</div>
+          <div class="text-body-2">Exercise {{ currentExerciseDisplay }} / {{ store.workoutState.config.exercisesPerBlock }}</div>
         </div>
         <div class="d-flex align-center ga-2">
           <v-chip size="small" class="mr-3">{{ connectionLabel }}</v-chip>
