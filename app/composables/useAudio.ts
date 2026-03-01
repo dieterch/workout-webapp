@@ -7,6 +7,7 @@ let gong: HTMLAudioElement | null = null
 let beep: HTMLAudioElement | null = null
 let signal: HTMLAudioElement | null = null
 let unlockListenersBound = false
+let unlockHandler: (() => void) | null = null
 
 function ensureAudioElements() {
   if (!gong) gong = new Audio('/sounds/gong.mp3')
@@ -16,10 +17,6 @@ function ensureAudioElements() {
   gong.preload = 'auto'
   beep.preload = 'auto'
   signal.preload = 'auto'
-
-  gong.load()
-  beep.load()
-  signal.load()
 }
 
 async function prime(audio: HTMLAudioElement) {
@@ -30,34 +27,55 @@ async function prime(audio: HTMLAudioElement) {
     await audio.play()
     audio.pause()
     audio.currentTime = 0
+    return true
   } catch {
-    // Ignore unlock errors; next user interaction can retry.
+    return false
   } finally {
     audio.muted = previousMuted
   }
 }
 
-function unlockInternal() {
-  if (enabled.value) return
-  enabled.value = true
+async function unlockInternal() {
+  if (enabled.value) return true
 
-  if (gong) void prime(gong)
-  if (beep) void prime(beep)
-  if (signal) void prime(signal)
+  const results = await Promise.all([
+    gong ? prime(gong) : Promise.resolve(true),
+    beep ? prime(beep) : Promise.resolve(true),
+    signal ? prime(signal) : Promise.resolve(true)
+  ])
+
+  const success = results.every(Boolean)
+  enabled.value = success
+
+  if (success) {
+    unbindUnlockListeners()
+  }
+
+  return success
+}
+
+function unbindUnlockListeners() {
+  if (!unlockHandler || !process.client) return
+  window.removeEventListener('pointerdown', unlockHandler)
+  window.removeEventListener('touchstart', unlockHandler)
+  window.removeEventListener('mousedown', unlockHandler)
+  window.removeEventListener('keydown', unlockHandler)
+  unlockHandler = null
+  unlockListenersBound = false
 }
 
 function bindUnlockListeners() {
   if (!process.client || unlockListenersBound) return
   unlockListenersBound = true
 
-  const handler = () => {
-    unlockInternal()
+  unlockHandler = () => {
+    void unlockInternal()
   }
 
-  window.addEventListener('pointerdown', handler, { once: true, passive: true })
-  window.addEventListener('touchstart', handler, { once: true, passive: true })
-  window.addEventListener('mousedown', handler, { once: true, passive: true })
-  window.addEventListener('keydown', handler, { once: true })
+  window.addEventListener('pointerdown', unlockHandler, { passive: true })
+  window.addEventListener('touchstart', unlockHandler, { passive: true })
+  window.addEventListener('mousedown', unlockHandler, { passive: true })
+  window.addEventListener('keydown', unlockHandler)
 }
 
 export function useAudio() {
@@ -76,7 +94,7 @@ export function useAudio() {
   bindUnlockListeners()
 
   function unlock() {
-    unlockInternal()
+    void unlockInternal()
   }
 
   function play(audio: HTMLAudioElement) {
