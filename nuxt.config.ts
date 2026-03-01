@@ -11,6 +11,11 @@ export default defineNuxtConfig({
   build: {
     transpile: ['vuetify']
   },
+  vite: {
+    build: {
+      cssMinify: 'lightningcss'
+    }
+  },
   nitro: {
     experimental: {
       websocket: true
