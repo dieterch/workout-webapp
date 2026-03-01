@@ -8,6 +8,7 @@ let beep: HTMLAudioElement | null = null
 let signal: HTMLAudioElement | null = null
 let unlockListenersBound = false
 let unlockHandler: (() => void) | null = null
+let primed = false
 
 function ensureAudioElements() {
   if (!gong) gong = new Audio('/sounds/gong.mp3')
@@ -21,7 +22,7 @@ function ensureAudioElements() {
 
 async function prime(audio: HTMLAudioElement) {
   const previousMuted = audio.muted
-  audio.muted = true
+  audio.muted = false
   audio.currentTime = 0
   try {
     await audio.play()
@@ -36,7 +37,10 @@ async function prime(audio: HTMLAudioElement) {
 }
 
 async function unlockInternal() {
-  if (enabled.value) return true
+  if (enabled.value && primed) return true
+
+  // Audio permission should be granted from this user gesture; do not gate playback on priming success.
+  enabled.value = true
 
   const results = await Promise.all([
     gong ? prime(gong) : Promise.resolve(true),
@@ -44,14 +48,14 @@ async function unlockInternal() {
     signal ? prime(signal) : Promise.resolve(true)
   ])
 
-  const success = results.every(Boolean)
-  enabled.value = success
+  const success = results.some(Boolean)
+  primed = primed || success
 
-  if (success) {
+  if (primed) {
     unbindUnlockListeners()
   }
 
-  return success
+  return primed
 }
 
 function unbindUnlockListeners() {
