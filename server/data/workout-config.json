@@ -1,0 +1,8 @@
+{
+  "name": "Workout",
+  "exercisesPerBlock": 5,
+  "actionSeconds": 40,
+  "restSeconds": 20,
+  "blockRestSeconds": 60,
+  "blocks": 3
+}
